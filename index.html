@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2FA Authenticator Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #6c63ff;
+      --primary-light: #a29bfe;
+      --primary-dark: #4834d4;
+      --accent: #00cec9;
+      --accent2: #fd79a8;
+      --gold: #ffeaa7;
+      --dark: #0a0a1a;
+      --dark2: #12122a;
+      --dark3: #1a1a3e;
+      --glass: rgba(255,255,255,0.05);
+      --glass-border: rgba(255,255,255,0.12);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --success: #00b894;
+      --danger: #d63031;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===== ANIMATED BACKGROUND ===== */
+    .bg-canvas {
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse at 20% 20%, rgba(108,99,255,0.15) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 80%, rgba(0,206,201,0.10) 0%, transparent 60%),
+                  radial-gradient(ellipse at 50% 50%, rgba(253,121,168,0.07) 0%, transparent 70%),
+                  linear-gradient(135deg, #0a0a1a 0%, #12122a 50%, #0a0a1a 100%);
+    }
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(80px); opacity: 0.25;
+      animation: floatOrb linear infinite; z-index: 0;
+    }
+    .orb-1 { width:500px; height:500px; background:var(--primary); top:-100px; left:-100px; animation-duration:20s; }
+    .orb-2 { width:400px; height:400px; background:var(--accent); bottom:-100px; right:-80px; animation-duration:25s; animation-direction:reverse; }
+    .orb-3 { width:300px; height:300px; background:var(--accent2); top:40%; left:40%; animation-duration:18s; opacity:0.15; }
+    @keyframes floatOrb {
+      0%   { transform: translate(0,0) scale(1); }
+      25%  { transform: translate(60px,-40px) scale(1.1); }
+      50%  { transform: translate(-30px,80px) scale(0.9); }
+      75%  { transform: translate(80px,30px) scale(1.05); }
+      100% { transform: translate(0,0) scale(1); }
+    }
+    .grid-overlay {
+      position: fixed; inset: 0; z-index: 0;
+      background-image: linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .page-wrapper { position: relative; z-index: 1; }
+
+    /* ===== NAVBAR ===== */
+    .navbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 48px;
+      backdrop-filter: blur(20px);
+      background: rgba(10,10,26,0.6);
+      border-bottom: 1px solid var(--glass-border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+    }
+    .nav-logo-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; box-shadow: 0 0 20px rgba(108,99,255,0.4);
+    }
+    .nav-badge {
+      font-size: 10px; font-weight: 700; padding: 3px 8px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 20px; letter-spacing: 1px;
+      text-transform: uppercase; margin-left: 4px;
+    }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a {
+      color: var(--text-muted); text-decoration: none;
+      font-size: 14px; font-weight: 500; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      padding: 10px 22px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff; font-weight: 600; font-size: 14px;
+      border: none; cursor: pointer; transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(108,99,255,0.3);
+    }
+    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(108,99,255,0.45); }
+
+    /* ===== HERO ===== */
+    .hero {
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; padding: 120px 24px 80px; position: relative;
+    }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.3);
+      padding: 8px 18px; border-radius: 50px; font-size: 13px; font-weight: 600;
+      color: var(--primary-light); margin-bottom: 32px; letter-spacing: 0.5px;
+    }
+    .hero-tag::before { content: '●'; color: var(--accent); animation: blink 1.5s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .hero-title {
+      font-size: clamp(42px, 7vw, 80px);
+      font-weight: 900; line-height: 1.05;
+      letter-spacing: -2px; margin-bottom: 24px;
+    }
+    .hero-title .gradient-text {
+      background: linear-gradient(90deg, var(--primary-light), var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-subtitle {
+      font-size: 18px; color: var(--text-muted);
+      max-width: 560px; line-height: 1.7; margin-bottom: 52px; font-weight: 400;
+    }
+
+    /* ===== ACTIVATE BUTTON ===== */
+    .activate-zone { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .btn-activate {
+      position: relative; padding: 18px 44px;
+      border: none; border-radius: 16px; cursor: pointer;
+      font-size: 16px; font-weight: 700; color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      box-shadow: 0 6px 30px rgba(108,99,255,0.45), 0 0 0 0 rgba(108,99,255,0.4);
+      transition: all 0.3s; overflow: hidden; letter-spacing: 0.3px;
+      animation: pulseBtn 3s infinite;
+    }
+    @keyframes pulseBtn {
+      0%,100% { box-shadow: 0 6px 30px rgba(108,99,255,0.45), 0 0 0 0 rgba(108,99,255,0.4); }
+      50% { box-shadow: 0 6px 40px rgba(108,99,255,0.6), 0 0 0 15px rgba(108,99,255,0); }
+    }
+    .btn-activate::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .btn-activate:hover { transform: translateY(-3px); }
+    .btn-activate:hover::before { opacity: 1; }
+    .btn-activate:active { transform: translateY(0); }
+    .btn-activate .btn-icon { margin-right: 10px; font-size: 18px; }
+    .btn-status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); transition: all 0.3s; }
+    .status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); animation: blink 1.5s infinite; }
+
+    /* ===== FEATURE CARDS ===== */
+    .features {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px; padding: 40px 48px 100px; max-width: 1200px; margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: 20px; padding: 32px; backdrop-filter: blur(16px);
+      transition: all 0.3s; position: relative; overflow: hidden;
+    }
+    .feature-card::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(108,99,255,0.05), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .feature-card:hover { transform: translateY(-6px); border-color: rgba(108,99,255,0.3); }
+    .feature-card:hover::after { opacity: 1; }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 20px;
+    }
+    .fi-1 { background: rgba(108,99,255,0.2); box-shadow: 0 0 20px rgba(108,99,255,0.2); }
+    .fi-2 { background: rgba(0,206,201,0.2); box-shadow: 0 0 20px rgba(0,206,201,0.2); }
+    .fi-3 { background: rgba(253,121,168,0.2); box-shadow: 0 0 20px rgba(253,121,168,0.2); }
+    .fi-4 { background: rgba(255,234,167,0.2); box-shadow: 0 0 20px rgba(255,234,167,0.2); }
+    .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+    .feature-card p { font-size: 14px; color: var(--text-muted); line-height: 1.65; }
+
+    /* ===== HOW TO USE ===== */
+    .how-to { max-width: 900px; margin: 0 auto; padding: 0 48px 100px; }
+    .section-label {
+      text-align: center; font-size: 13px; font-weight: 700;
+      color: var(--primary-light); letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .section-title { text-align: center; font-size: 36px; font-weight: 800; letter-spacing: -1px; margin-bottom: 56px; }
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: flex; gap: 24px; align-items: flex-start;
+      position: relative; padding-bottom: 40px;
+    }
+    .step:last-child { padding-bottom: 0; }
+    .step:not(:last-child)::before {
+      content: ''; position: absolute; left: 23px; top: 54px;
+      width: 2px; height: calc(100% - 54px);
+      background: linear-gradient(to bottom, var(--primary), transparent);
+    }
+    .step-num {
+      flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; box-shadow: 0 0 20px rgba(108,99,255,0.4);
+    }
+    .step-content h4 { font-size: 17px; font-weight: 700; margin-bottom: 6px; padding-top: 10px; }
+    .step-content p { font-size: 14px; color: var(--text-muted); line-height: 1.65; }
+    .step-content code {
+      background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.25);
+      padding: 2px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; color: var(--primary-light);
+    }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(120px);
+      background: rgba(0,184,148,0.95); color: #fff; padding: 14px 28px;
+      border-radius: 50px; font-size: 14px; font-weight: 600;
+      backdrop-filter: blur(20px); z-index: 9999; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.error { background: rgba(214,48,49,0.95); }
+    .toast.warn  { background: rgba(253,121,168,0.95); }
+
+    /* ===== PERMISSION MODAL ===== */
+    .perm-overlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .perm-overlay.show { opacity: 1; pointer-events: all; }
+
+    .perm-modal {
+      background: linear-gradient(145deg, #14143a, #1a1a4a);
+      border: 1px solid rgba(108,99,255,0.4);
+      border-radius: 24px; padding: 36px 32px;
+      max-width: 440px; width: calc(100% - 48px);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(108,99,255,0.1);
+      transform: scale(0.88) translateY(20px);
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      position: relative; overflow: hidden;
+    }
+    .perm-overlay.show .perm-modal { transform: scale(1) translateY(0); }
+
+    .perm-modal::before {
+      content: '';
+      position: absolute; top: -60px; left: -60px;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(108,99,255,0.2), transparent);
+      pointer-events: none;
+    }
+
+    .perm-app-icon {
+      width: 68px; height: 68px; border-radius: 18px; margin: 0 auto 20px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 8px 32px rgba(108,99,255,0.5);
+    }
+
+    .perm-title {
+      font-size: 20px; font-weight: 800; text-align: center;
+      margin-bottom: 6px; letter-spacing: -0.3px;
+    }
+    .perm-subtitle {
+      font-size: 13px; color: var(--text-muted); text-align: center;
+      margin-bottom: 28px; line-height: 1.5;
+    }
+
+    .perm-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .perm-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 14px 16px;
+      transition: border-color 0.2s;
+    }
+    .perm-item:hover { border-color: rgba(108,99,255,0.3); }
+    .perm-item-icon {
+      width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .pi-overlay { background: rgba(108,99,255,0.2); }
+    .pi-clip    { background: rgba(0,206,201,0.2);   }
+    .pi-persist { background: rgba(253,121,168,0.2); }
+    .perm-item-info h5 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .perm-item-info p  { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+
+    .perm-notice {
+      background: rgba(255,234,167,0.08);
+      border: 1px solid rgba(255,234,167,0.2);
+      border-radius: 10px; padding: 10px 14px;
+      font-size: 12px; color: #ffeaa7;
+      display: flex; gap: 8px; align-items: flex-start;
+      margin-bottom: 24px; line-height: 1.5;
+    }
+
+    .perm-actions { display: flex; gap: 12px; }
+    .perm-deny {
+      flex: 1; padding: 13px; border-radius: 12px;
+      background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border);
+      color: var(--text-muted); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .perm-deny:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+    .perm-allow {
+      flex: 2; padding: 13px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border: none; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.3s;
+      box-shadow: 0 4px 20px rgba(108,99,255,0.4);
+    }
+    .perm-allow:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(108,99,255,0.55); }
+
+    /* ===== FOOTER ===== */
+    footer {
+      text-align: center; padding: 32px; color: var(--text-muted);
+      font-size: 13px; border-top: 1px solid var(--glass-border);
+      background: rgba(10,10,26,0.4); backdrop-filter: blur(10px);
+    }
+    footer span { color: var(--primary-light); }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(108,99,255,0.4); border-radius: 3px; }
+
+    /* ===== PIP FALLBACK ===== */
+    .pip-fallback {
+      position: fixed; z-index: 99999;
+      background: rgba(10,10,26,0.92);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+      border-radius: 50%; cursor: grab;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 2px rgba(108,99,255,0.4);
+      display: none; touch-action: none; transition: box-shadow 0.3s;
+    }
+    .pip-fallback:active { cursor: grabbing; }
+    .pip-fallback.active-hold { box-shadow: 0 0 0 4px var(--primary), 0 0 30px rgba(108,99,255,0.6); }
+
+    @media (max-width: 768px) {
+      .navbar { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .hero { padding: 80px 20px 60px; }
+      .features { padding: 20px 20px 60px; }
+      .how-to { padding: 0 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-canvas"></div>
+<div class="grid-overlay"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast">✅ কোড কপি হয়েছে!</div>
+
+<!-- ===== PERMISSION MODAL ===== -->
+<div class="perm-overlay" id="permOverlay">
+  <div class="perm-modal">
+    <div class="perm-app-icon">🔐</div>
+    <h2 class="perm-title">অনুমতি প্রয়োজন</h2>
+    <p class="perm-subtitle">2FA Pro ফ্লোটিং উইজেট চালু করতে নিচের অনুমতিগুলো প্রয়োজন</p>
+
+    <div class="perm-list">
+      <div class="perm-item">
+        <div class="perm-item-icon pi-overlay">🖥️</div>
+        <div class="perm-item-info">
+          <h5>ডিসপ্লের উপর প্রদর্শন</h5>
+          <p>অ্যাপ বা ট্যাব পরিবর্তন করলেও স্ক্রিনের উপরে ভাসমান উইজেট দেখাতে থাকবে।</p>
+        </div>
+      </div>
+      <div class="perm-item">
+        <div class="perm-item-icon pi-clip">📋</div>
+        <div class="perm-item-info">
+          <h5>ক্লিপবোর্ড পড়া ও লেখা</h5>
+          <p>সিক্রেট কী পড়তে এবং তৈরি হওয়া TOTP কোড ক্লিপবোর্ডে কপি করতে ব্যবহার হবে।</p>
+        </div>
+      </div>
+      <div class="perm-item">
+        <div class="perm-item-icon pi-persist">🔄</div>
+        <div class="perm-item-info">
+          <h5>ব্যাক নেভিগেশনে অটো-রিস্টার্ট</h5>
+          <p>Chrome-এ Back বাটন চাপলেও উইজেট স্বয়ংক্রিয়ভাবে পুনরায় চালু হবে।</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="perm-notice">
+      <span>🔒</span>
+      <span>সমস্ত ডেটা শুধু আপনার ব্রাউজারেই থাকে। কোনো সার্ভারে পাঠানো হয় না।</span>
+    </div>
+
+    <div class="perm-actions">
+      <button class="perm-deny" onclick="denyPermission()">বাতিল করুন</button>
+      <button class="perm-allow" onclick="grantPermission()">✅ অনুমতি দিন</button>
+    </div>
+  </div>
+</div>
+
+<!-- Page -->
+<div class="page-wrapper">
+  <nav class="navbar">
+    <div class="nav-logo">
+      <div class="nav-logo-icon">🔐</div>
+      2FA Pro <span class="nav-badge">TOTP</span>
+    </div>
+    <div class="nav-links">
+      <a href="#">হোম</a>
+      <a href="#">ফিচার</a>
+      <a href="#">কিভাবে ব্যবহার করবেন</a>
+      <a href="#">নিরাপত্তা</a>
+    </div>
+    <button class="nav-cta" onclick="scrollToActivate()">এখনই চেষ্টা করুন →</button>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-tag">🛡️ Google Authenticator সামঞ্জস্যপূর্ণ · RFC 6238 TOTP</div>
+    <h1 class="hero-title">
+      <span class="gradient-text">2FA কোড</span> এখন<br/>এক ক্লিকেই
+    </h1>
+    <p class="hero-subtitle">
+      গোপন কী কপি করুন, ছোট্ট ভাসমান বলটিতে চাপ দিন — ০.১ সেকেন্ডেই ৬ সংখ্যার TOTP কোড তৈরি হয়ে ক্লিপবোর্ডে চলে যাবে।
+    </p>
+    <div class="activate-zone" id="activate-zone">
+      <button class="btn-activate" id="btn-activate" onclick="handleActivateClick()">
+        <span class="btn-icon">🚀</span>
+        <span id="btn-text">ফ্লোটিং উইজেট চালু করুন</span>
+      </button>
+      <div class="btn-status">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">নিষ্ক্রিয়</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feature-card">
+      <div class="feature-icon fi-1">🔑</div>
+      <h3>TOTP অ্যালগরিদম</h3>
+      <p>Google Authenticator-এর মতো একই RFC 6238 স্ট্যান্ডার্ড। SHA-1 HMAC এবং 30-সেকেন্ড উইন্ডো সহ সম্পূর্ণ সামঞ্জস্যপূর্ণ।</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-2">🌊</div>
+      <h3>ভাসমান উইজেট</h3>
+      <p>Picture-in-Picture প্রযুক্তি ব্যবহার করে অন্য ট্যাব বা অ্যাপে গেলেও স্ক্রিনে ভাসতে থাকে।</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-3">✋</div>
+      <h3>ড্র্যাগ এবং হোল্ড</h3>
+      <p>বলটিকে স্ক্রিনের যেকোনো জায়গায় টেনে নিয়ে যান। ০.১ সেকেন্ড চেপে ধরলেই কোড কপি হয়।</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-4">🔒</div>
+      <h3>ক্লায়েন্ট-সাইড নিরাপত্তা</h3>
+      <p>সমস্ত কম্পিউটেশন আপনার ব্রাউজারেই হয়। কোনো ডেটা সার্ভারে পাঠানো হয় না।</p>
+    </div>
+  </section>
+
+  <section class="how-to" id="how-to">
+    <p class="section-label">ব্যবহার বিধি</p>
+    <h2 class="section-title">কিভাবে ব্যবহার করবেন?</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>সিক্রেট কী কপি করুন</h4>
+          <p>আপনার অ্যাকাউন্টের 2FA সেটআপ পেজ থেকে Base32 এনকোড করা সিক্রেট কী (সাধারণত ১৬-৩২ অক্ষর) কপি করুন। উদাহরণ: <code>JBSWY3DPEHPK3PXP</code></p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>উইজেট চালু করুন</h4>
+          <p>উপরের <strong>"ফ্লোটিং উইজেট চালু করুন"</strong> বাটনে ক্লিক করুন। পারমিশন ডায়ালগ আসবে — অনুমতি দিন।</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>বলটি চাপুন</h4>
+          <p>ভাসমান বলটিতে মাত্র <strong>০.১ সেকেন্ড</strong> চেপে ধরুন। ৬ সংখ্যার TOTP কোড স্বয়ংক্রিয়ভাবে ক্লিপবোর্ডে কপি হয়ে যাবে।</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>কোড পেস্ট করুন</h4>
+          <p>যেকোনো জায়গায় <code>Ctrl+V</code> দিয়ে কোড পেস্ট করুন। প্রতিটি কোড ৩০ সেকেন্ডের জন্য বৈধ।</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>© 2024 <span>2FA Pro</span> · সমস্ত ডেটা ব্রাউজারেই থাকে · কোনো সার্ভার নেই · <span>নিরাপদ</span></p>
+  </footer>
+</div>
+
+<!-- Fallback Floating Widget -->
+<canvas id="fallback-widget" class="pip-fallback" width="68" height="68"></canvas>
+
+<script>
+/* ============================================================
+   TOTP ENGINE — RFC 6238 / Google Authenticator Compatible
+   ============================================================ */
+const BASE32_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function base32Decode(input) {
+  input = input.toUpperCase().replace(/[^A-Z2-7]/g, '');
+  let bits = 0, value = 0;
+  const output = new Uint8Array(Math.floor(input.length * 5 / 8));
+  let idx = 0;
+  for (let i = 0; i < input.length; i++) {
+    const charIdx = BASE32_CHARS.indexOf(input[i]);
+    if (charIdx === -1) continue;
+    value = (value << 5) | charIdx;
+    bits += 5;
+    if (bits >= 8) {
+      output[idx++] = (value >>> (bits - 8)) & 0xff;
+      bits -= 8;
+    }
+  }
+  return output.buffer;
+}
+
+async function generateTOTP(secret) {
+  const keyBuffer = base32Decode(secret);
+  const counter = Math.floor(Date.now() / 30000);
+  const counterBuffer = new ArrayBuffer(8);
+  const view = new DataView(counterBuffer);
+  view.setUint32(0, 0, false);
+  view.setUint32(4, counter, false);
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', keyBuffer,
+    { name: 'HMAC', hash: { name: 'SHA-1' } },
+    false, ['sign']
+  );
+  const hmac = await crypto.subtle.sign('HMAC', cryptoKey, counterBuffer);
+  const hash = new Uint8Array(hmac);
+  const offset = hash[hash.length - 1] & 0xf;
+  const code = ((hash[offset] & 0x7f) << 24)
+             | ((hash[offset + 1] & 0xff) << 16)
+             | ((hash[offset + 2] & 0xff) << 8)
+             |  (hash[offset + 3] & 0xff);
+  return String(code % 1_000_000).padStart(6, '0');
+}
+
+function getTimeRemaining() { return 30 - (Math.floor(Date.now() / 1000) % 30); }
+
+/* ============================================================
+   WIDGET STATE & SESSION PERSISTENCE
+   ============================================================ */
+let widgetActive = false;
+let pipWindow = null;
+let fallbackActive = false;
+const SESSION_KEY = '2fa_widget_active';
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ============================================================
+   SCROLL HELPER
+   ============================================================ */
+function scrollToActivate() {
+  document.getElementById('activate-zone').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ============================================================
+   PERMISSION MODAL
+   ============================================================ */
+function handleActivateClick() {
+  if (widgetActive) {
+    shutdownWidget();
+    return;
+  }
+  showPermissionModal();
+}
+
+function showPermissionModal() {
+  const overlay = document.getElementById('permOverlay');
+  overlay.classList.add('show');
+}
+
+function hidePermissionModal() {
+  const overlay = document.getElementById('permOverlay');
+  overlay.classList.remove('show');
+}
+
+function denyPermission() {
+  hidePermissionModal();
+  showToast('⚠️ উইজেট চালু করা হয়নি।', 'warn');
+}
+
+async function grantPermission() {
+  hidePermissionModal();
+
+  /* ── Step 1: Request Clipboard Permissions ── */
+  try {
+    const readPerm  = await navigator.permissions.query({ name: 'clipboard-read'  });
+    const writePerm = await navigator.permissions.query({ name: 'clipboard-write' });
+
+    if (readPerm.state === 'denied' || writePerm.state === 'denied') {
+      showToast('❌ ক্লিপবোর্ড অনুমতি প্রত্যাখ্যান করা হয়েছে!', 'error');
+      return;
+    }
+
+    /* Trigger native clipboard permission prompt by a test read */
+    try {
+      await navigator.clipboard.readText();
+    } catch(clipErr) {
+      /* Browser may deny silently — continue anyway */
+    }
+  } catch (permErr) {
+    /* Permissions API not supported — continue */
+  }
+
+  /* ── Step 2: Launch Widget ── */
+  await launchWidget();
+}
+
+/* ============================================================
+   TOGGLE WIDGET
+   ============================================================ */
+async function toggleWidget() {
+  if (widgetActive) shutdownWidget();
+  else await launchWidget();
+}
+
+function updateBtnState(active) {
+  widgetActive = active;
+
+  /* Persist to sessionStorage so back-navigation can restore */
+  try {
+    if (active) sessionStorage.setItem(SESSION_KEY, '1');
+    else         sessionStorage.removeItem(SESSION_KEY);
+  } catch(e) {}
+
+  const btn  = document.getElementById('btn-activate');
+  const txt  = document.getElementById('btn-text');
+  const dot  = document.getElementById('status-dot');
+  const stxt = document.getElementById('status-text');
+
+  if (active) {
+    txt.textContent = '⏹ উইজেট বন্ধ করুন';
+    btn.style.background = 'linear-gradient(135deg, #d63031, #e17055)';
+    dot.classList.add('active');
+    stxt.textContent = 'সক্রিয় — স্ক্রিনে ভাসছে';
+  } else {
+    txt.textContent = '🚀 ফ্লোটিং উইজেট চালু করুন';
+    btn.style.background = '';
+    dot.classList.remove('active');
+    stxt.textContent = 'নিষ্ক্রিয়';
+  }
+}
+
+/* ============================================================
+   PiP WIDGET HTML
+   ============================================================ */
+function buildPipHTML() {
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    width:100%; height:100%;
+    background: transparent;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .orb-container {
+    position: relative; width: 68px; height: 68px;
+    cursor: grab; user-select: none; -webkit-user-select: none;
+  }
+  .orb-container:active { cursor: grabbing; }
+  .orb-bg {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: linear-gradient(135deg, #6c63ff, #00cec9);
+    box-shadow: 0 0 0 2px rgba(108,99,255,0.5), 0 4px 20px rgba(108,99,255,0.6);
+    transition: all 0.15s ease;
+  }
+  .orb-ring {
+    position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid rgba(108,99,255,0.4);
+    animation: ringPulse 2s ease-in-out infinite;
+  }
+  @keyframes ringPulse {
+    0%,100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 0; }
+  }
+  .orb-ring2 {
+    position: absolute; inset: -10px; border-radius: 50%;
+    border: 1px solid rgba(0,206,201,0.25);
+    animation: ringPulse 2s ease-in-out infinite 0.6s;
+  }
+  .orb-icon {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; z-index: 2; transition: all 0.15s;
+  }
+  .progress-ring { position: absolute; inset: 0; border-radius: 50%; transform: rotate(-90deg); }
+  .progress-ring svg { width: 100%; height: 100%; }
+  .progress-track { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 3; }
+  .progress-bar  { fill: none; stroke: #ffeaa7; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .orb-container.holding .orb-bg {
+    box-shadow: 0 0 0 5px rgba(108,99,255,0.8), 0 0 30px rgba(108,99,255,0.9);
+    transform: scale(1.08);
+  }
+  .orb-container.holding .orb-icon { transform: scale(0.85); }
+  .orb-container.success .orb-bg {
+    background: linear-gradient(135deg, #00b894, #00cec9) !important;
+    box-shadow: 0 0 0 5px rgba(0,184,148,0.8), 0 0 30px rgba(0,184,148,0.9) !important;
+    animation: successPop 0.4s ease;
+  }
+  @keyframes successPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.2); }
+    70% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+  }
+  .code-display {
+    position: absolute; top: -58px; left: 50%;
+    transform: translateX(-50%) scale(0);
+    background: rgba(10,10,26,0.95);
+    border: 1px solid rgba(108,99,255,0.4);
+    border-radius: 12px; padding: 8px 14px;
+    white-space: nowrap;
+    font-family: 'Courier New', monospace;
+    font-size: 18px; font-weight: 700;
+    color: #a29bfe; letter-spacing: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    opacity: 0; z-index: 10;
+  }
+  .code-display::after {
+    content: ''; position: absolute; bottom: -6px; left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid rgba(108,99,255,0.4);
+  }
+  .code-display.show { transform: translateX(-50%) scale(1); opacity: 1; }
+  .shake { animation: shake 0.3s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+  }
+  .timer-text {
+    position: absolute; bottom: -20px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px; font-family: 'Courier New', monospace;
+    color: rgba(255,255,255,0.5); letter-spacing: 0.5px; white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="orb-container" id="orb">
+  <div class="orb-ring"></div>
+  <div class="orb-ring2"></div>
+  <div class="orb-bg" id="orbBg"></div>
+  <div class="progress-ring">
+    <svg viewBox="0 0 68 68">
+      <circle class="progress-track" cx="34" cy="34" r="30"/>
+      <circle class="progress-bar" id="progressBar" cx="34" cy="34" r="30"
+              stroke-dasharray="188.5" stroke-dashoffset="0"/>
+    </svg>
+  </div>
+  <div class="orb-icon" id="orbIcon">🔑</div>
+  <div class="code-display" id="codeDisplay">000000</div>
+  <div class="timer-text" id="timerText">30s</div>
+</div>
+<script>
+  const orb = document.getElementById('orb');
+  const orbIcon = document.getElementById('orbIcon');
+  const progressBar = document.getElementById('progressBar');
+  const codeDisplay = document.getElementById('codeDisplay');
+  const timerText = document.getElementById('timerText');
+  const CIRCUMFERENCE = 188.5;
+
+  function updateProgress() {
+    const rem = 30 - (Math.floor(Date.now() / 1000) % 30);
+    const frac = rem / 30;
+    progressBar.style.strokeDashoffset = CIRCUMFERENCE * (1 - frac);
+    timerText.textContent = rem + 's';
+    progressBar.style.stroke = rem <= 5 ? '#fd79a8' : rem <= 10 ? '#ffeaa7' : '#a29bfe';
+  }
+  setInterval(updateProgress, 500);
+  updateProgress();
+
+  const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  function base32Decode(input) {
+    input = input.toUpperCase().replace(/[^A-Z2-7]/g, '');
+    let bits = 0, value = 0;
+    const out = new Uint8Array(Math.floor(input.length * 5 / 8));
+    let idx = 0;
+    for (let i = 0; i < input.length; i++) {
+      const ci = B32.indexOf(input[i]);
+      if (ci === -1) continue;
+      value = (value << 5) | ci;
+      bits += 5;
+      if (bits >= 8) {
+        out[idx++] = (value >>> (bits - 8)) & 0xff;
+        bits -= 8;
+      }
+    }
+    return out.buffer;
+  }
+
+  async function generateTOTP(secret) {
+    const keyBuffer = base32Decode(secret);
+    const counter = Math.floor(Date.now() / 30000);
+    const counterBuffer = new ArrayBuffer(8);
+    const view = new DataView(counterBuffer);
+    view.setUint32(0, 0, false);
+    view.setUint32(4, counter, false);
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw', keyBuffer,
+      { name: 'HMAC', hash: { name: 'SHA-1' } },
+      false, ['sign']
+    );
+    const hmac = await crypto.subtle.sign('HMAC', cryptoKey, counterBuffer);
+    const hash = new Uint8Array(hmac);
+    const offset = hash[hash.length - 1] & 0xf;
+    const code = ((hash[offset] & 0x7f) << 24)
+               | ((hash[offset+1] & 0xff) << 16)
+               | ((hash[offset+2] & 0xff) <<  8)
+               |  (hash[offset+3] & 0xff);
+    return String(code % 1000000).padStart(6, '0');
+  }
+
+  let holdTimer = null, isDragging = false;
+
+  function startHold() {
+    if (isDragging) return;
+    orb.classList.add('holding');
+    holdTimer = setTimeout(async () => {
+      try {
+        const rawSecret = await navigator.clipboard.readText();
+        const secret = rawSecret.trim().replace(/\\s/g, '');
+        if (!secret || secret.length < 8) {
+          orbIcon.textContent = '❌';
+          orb.classList.add('shake');
+          setTimeout(() => { orb.classList.remove('shake'); orbIcon.textContent = '🔑'; }, 600);
+          return;
+        }
+        const totp = await generateTOTP(secret);
+        await navigator.clipboard.writeText(totp);
+        codeDisplay.textContent = totp;
+        codeDisplay.classList.add('show');
+        orb.classList.remove('holding');
+        orb.classList.add('success');
+        orbIcon.textContent = '✅';
+        setTimeout(() => {
+          codeDisplay.classList.remove('show');
+          orb.classList.remove('success');
+          orbIcon.textContent = '🔑';
+        }, 3000);
+      } catch(e) {
+        orbIcon.textContent = '❌';
+        orb.classList.add('shake');
+        setTimeout(() => { orb.classList.remove('shake','holding'); orbIcon.textContent = '🔑'; }, 600);
+      }
+    }, 100);
+  }
+
+  function cancelHold() {
+    clearTimeout(holdTimer);
+    orb.classList.remove('holding');
+  }
+
+  orb.addEventListener('mousedown', startHold);
+  orb.addEventListener('mouseup', cancelHold);
+  orb.addEventListener('mouseleave', cancelHold);
+  orb.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(); }, { passive: false });
+  orb.addEventListener('touchend', cancelHold);
+<\/script>
+</body>
+</html>`;
+}
+
+/* ============================================================
+   LAUNCH PiP WINDOW
+   ============================================================ */
+async function launchWidget() {
+  if ('documentPictureInPicture' in window) {
+    try {
+      pipWindow = await documentPictureInPicture.requestWindow({
+        width: 120,
+        height: 120,
+        disallowReturnToOpener: false
+      });
+
+      pipWindow.document.open();
+      pipWindow.document.write(buildPipHTML());
+      pipWindow.document.close();
+
+      const styleEl = pipWindow.document.createElement('style');
+      styleEl.textContent = 'html, body { background: transparent !important; }';
+      pipWindow.document.head.appendChild(styleEl);
+
+      pipWindow.addEventListener('pagehide', () => {
+        updateBtnState(false);
+        pipWindow = null;
+      });
+
+      updateBtnState(true);
+      showToast('✅ উইজেট চালু! অন্য ট্যাবে গেলেও ভাসবে।');
+      return;
+    } catch (err) {
+      console.warn('Document PiP failed:', err);
+    }
+  }
+
+  /* Fallback */
+  launchFallbackWidget();
+}
+
+/* ============================================================
+   FALLBACK FLOATING WIDGET
+   ============================================================ */
+function launchFallbackWidget() {
+  if (fallbackActive) return;
+  fallbackActive = true;
+  updateBtnState(true);
+
+  const widget = document.getElementById('fallback-widget');
+  widget.style.display = 'block';
+  widget.style.width   = '68px';
+  widget.style.height  = '68px';
+  widget.style.right   = '32px';
+  widget.style.bottom  = '32px';
+  widget.style.left    = 'auto';
+  widget.style.top     = 'auto';
+
+  drawFallbackOrb(widget, 'idle');
+
+  let holdTimer = null;
+  let isDragging = false;
+  let dragStartX, dragStartY, startLeft, startTop;
+
+  function getPos(e) {
+    return e.touches ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
+                     : { x: e.clientX, y: e.clientY };
+  }
+
+  function onStart(e) {
+    e.preventDefault();
+    const pos = getPos(e);
+    dragStartX = pos.x; dragStartY = pos.y;
+    isDragging = false;
+    const rect = widget.getBoundingClientRect();
+    startLeft = rect.left; startTop = rect.top;
+
+    holdTimer = setTimeout(() => {
+      if (!isDragging) activateFallbackHold(widget);
+    }, 100);
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+  }
+
+  function onMove(e) {
+    e.preventDefault();
+    const pos = getPos(e);
+    const dx = pos.x - dragStartX, dy = pos.y - dragStartY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      isDragging = true;
+      clearTimeout(holdTimer);
+      widget.classList.remove('active-hold');
+    }
+    if (isDragging) {
+      let newLeft = Math.max(0, Math.min(startLeft + dx, window.innerWidth  - 68));
+      let newTop  = Math.max(0, Math.min(startTop  + dy, window.innerHeight - 68));
+      widget.style.left   = newLeft + 'px';
+      widget.style.top    = newTop  + 'px';
+      widget.style.right  = 'auto';
+      widget.style.bottom = 'auto';
+    }
+  }
+
+  function onEnd() {
+    clearTimeout(holdTimer);
+    isDragging = false;
+    widget.classList.remove('active-hold');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+  }
+
+  widget.addEventListener('mousedown', onStart);
+  widget.addEventListener('touchstart', onStart, { passive: false });
+
+  showToast('✅ উইজেট চালু! (ফলব্যাক মোড)');
+}
+
+async function activateFallbackHold(widget) {
+  widget.classList.add('active-hold');
+  try {
+    const rawSecret = await navigator.clipboard.readText();
+    const secret = rawSecret.trim().replace(/\s/g, '');
+    if (!secret || secret.length < 8) {
+      showToast('⚠️ ক্লিপবোর্ডে বৈধ সিক্রেট কী নেই!', 'warn');
+      widget.classList.remove('active-hold');
+      return;
+    }
+    const totp = await generateTOTP(secret);
+    await navigator.clipboard.writeText(totp);
+    drawFallbackOrb(widget, 'success');
+    showToast('✅ ' + totp + ' — কোড কপি হয়েছে!');
+    setTimeout(() => drawFallbackOrb(widget, 'idle'), 3000);
+  } catch (e) {
+    showToast('❌ ক্লিপবোর্ড অ্যাক্সেস ব্যর্থ!', 'error');
+  }
+  widget.classList.remove('active-hold');
+}
+
+function drawFallbackOrb(canvas, state) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height, cx = w/2, cy = h/2, r = 28;
+  ctx.clearRect(0, 0, w, h);
+
+  const glow = ctx.createRadialGradient(cx,cy,0,cx,cy,r*1.5);
+  glow.addColorStop(0, state==='success' ? 'rgba(0,184,148,0.3)' : 'rgba(108,99,255,0.3)');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(cx,cy,r*1.5,0,Math.PI*2); ctx.fill();
+
+  const grad = ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);
+  if (state === 'success') {
+    grad.addColorStop(0, '#00b894'); grad.addColorStop(1, '#00cec9');
+  } else {
+    grad.addColorStop(0, '#6c63ff'); grad.addColorStop(1, '#00cec9');
+  }
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle = grad; ctx.fill();
+
+  const rem = 30 - (Math.floor(Date.now()/1000) % 30);
+  const frac = rem / 30;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r+4, -Math.PI/2, -Math.PI/2 + 2*Math.PI*frac);
+  ctx.strokeStyle = rem <= 5 ? '#fd79a8' : '#ffeaa7';
+  ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+
+  ctx.font = '22px serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(state === 'success' ? '✅' : '🔑', cx, cy);
+}
+
+function shutdownWidget() {
+  if (pipWindow) { try { pipWindow.close(); } catch(e){} pipWindow = null; }
+  const w = document.getElementById('fallback-widget');
+  w.style.display = 'none';
+  fallbackActive = false;
+  updateBtnState(false);
+  showToast('⏹ উইজেট বন্ধ হয়েছে', 'error');
+}
+
+/* ============================================================
+   BACK NAVIGATION / BFCache RESTORE HANDLER
+   ============================================================ */
+window.addEventListener('pageshow', async function(event) {
+  /* event.persisted = true  →  page restored from BF cache (back button) */
+  if (event.persisted) {
+    const wasActive = sessionStorage.getItem(SESSION_KEY) === '1';
+    if (wasActive && !widgetActive) {
+      /* Small delay to let the DOM settle after BFCache restore */
+      setTimeout(async () => {
+        showToast('🔄 উইজেট পুনরায় চালু হচ্ছে…', 'warn');
+        await launchWidget();
+      }, 400);
+    }
+  }
+});
+
+/* Keep sessionStorage alive while the page is being hidden
+   (e.g. user navigates away, presses a link) */
+window.addEventListener('pagehide', function() {
+  /* sessionStorage persists in BFCache — nothing extra needed */
+});
+
+/* Also handle popstate (hash-based navigation) */
+window.addEventListener('popstate', async function() {
+  const wasActive = sessionStorage.getItem(SESSION_KEY) === '1';
+  if (wasActive && !widgetActive) {
+    setTimeout(async () => await launchWidget(), 300);
+  }
+});
+
+/* ============================================================
+   REFRESH FALLBACK CANVAS PERIODICALLY
+   ============================================================ */
+setInterval(() => {
+  if (fallbackActive) {
+    const w = document.getElementById('fallback-widget');
+    if (w.style.display !== 'none') drawFallbackOrb(w, 'idle');
+  }
+}, 1000);
+
+/* ============================================================
+   PARTICLE EFFECT
+   ============================================================ */
+(function() {
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.4';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize); resize();
+
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random()*1920, y: Math.random()*1080,
+      vx: (Math.random()-.5)*0.4, vy: (Math.random()-.5)*0.4,
+      r: Math.random()*1.5+0.5,
+      c: ['rgba(108,99,255,','rgba(0,206,201,','rgba(253,121,168,'][Math.floor(Math.random()*3)]
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = p.c+'0.7)'; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ============================================================
+   CLOSE PERMISSION MODAL ON OVERLAY CLICK
+   ============================================================ */
+document.getElementById('permOverlay').addEventListener('click', function(e) {
+  if (e.target === this) denyPermission();
+});
+</script>
+</body>
+</html>
